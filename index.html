@@ -17,9 +17,7 @@
       }
 
 
-      #favorite-list-section {
-
-      }
+      #favorite-list-section,
       #favorite-detail-section {
       	display: none;
       }
@@ -147,8 +145,9 @@
     		// favorite li's attribute data-favoriteid
     		listDataId: 'favoriteid',
 
-    		// default transition speed for show, hide, fadeIn, fadeOut, etc
-    		defaultSpeed: 'fast',
+        // default animation duration determining how long the animation will return
+        // for show, hide, fadeIn, fadeOut, etc
+    		defaultDuration: 'fast',
 
     		getListHeaderHtml: function(opts) {
     			// HTML string for the header part of sortable list section
@@ -236,7 +235,7 @@
 
     				// this is the object of SortableList itself
     				var self = this;
-    				var speed = 'fast';
+    				var duration = 'fast';
 
     				this.$listSection.on('click', '.edit-button', function(e) {
 
@@ -244,17 +243,17 @@
     					// $(e.target).hide();
 
     					// Hide .edit-button
-    					self.$listHeader.find('.edit-button').fadeOut(speed, function() {
+    					self.$listHeader.find('.edit-button').fadeOut(duration, function() {
     						// Show .save-button and .cancel-button in this.$listHeader
-    						self.$listHeader.find('.save-button').fadeIn(speed);
-    						self.$listHeader.find('.cancel-button').fadeIn(speed);
+    						self.$listHeader.find('.save-button').fadeIn(duration);
+    						self.$listHeader.find('.cancel-button').fadeIn(duration);
     					});
 
     					// Hide .list-detail-button on each li
-    					self.$listUl.find('.list-detail-button').fadeOut(speed, function() {
+    					self.$listUl.find('.list-detail-button').fadeOut(duration, function() {
     						// Show .list-delete-button and list-move-button in each li
-	    					self.$listUl.find('.list-delete-button').fadeIn(speed);
-	    					self.$listUl.find('.list-move-button').fadeIn(speed);
+	    					self.$listUl.find('.list-delete-button').fadeIn(duration);
+	    					self.$listUl.find('.list-move-button').fadeIn(duration);
     					});
 
     					self._enableListSortable();
@@ -269,9 +268,8 @@
     				var speed = 'fast';
 
     				this.$listSection.on('click', '.cancel-button', function(e) {
-    					self.resetListSection();
-
     					self._disableListSortable();
+              self.resetListSection();
     				});
 
     			},
@@ -282,8 +280,9 @@
     				var self = this;
 
     				this.$listSection.on('click', '.save-button', function(e) {
-    					self.saveListEdit();
-    					self.resetListSection();
+              self.saveListEdit();
+              self._disableListSortable();
+              self.resetListSection();
     				});
 
     			},
@@ -297,7 +296,10 @@
 
     				this.$listSection.on('click', '.list-detail-button', function(e) {
     					var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
-    					self.showDetail(itemIndex);
+              var opts = {
+                itemIndex: itemIndex
+              };
+    					self.showDetail(opts);
     				});
 
     			},
@@ -310,7 +312,10 @@
     				this.$detailArticle.on('click', '.detail-edit-button', function(e) {
     					// var itemIndex = $(e.target).closest('#' + self.detailSectionId).data(self.listDataId);
     					var itemIndex = self.$detailSection.data(self.listDataId);
-    					self.showDetailEdit(itemIndex);
+              var opts = {
+                itemIndex: itemIndex
+              };
+    					self.showDetailEdit(opts);
     				});
 
     			},
@@ -322,7 +327,10 @@
 
     				this.$detailEditArticle.on('click', '.detail-cancel-button', function(e) {
     					var itemIndex = self.$detailSection.data(self.listDataId);
-    					self.showDetail(itemIndex);
+              var opts = {
+                itemIndex: itemIndex
+              };
+    					self.showDetail(opts);
     				});
 
     			},
@@ -338,7 +346,10 @@
 
     					// TODO: Save the updated favorites in database
 
-    					self.showDetail(itemIndex);
+              var opts = {
+                itemIndex: itemIndex
+              };
+    					self.showDetail(opts);
     				});
 
     			},
@@ -361,7 +372,9 @@
 
     				this.$listSection.on('click', '.list-delete-button', function(e) {
     					var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
-    					self.removeLiById(itemIndex);
+    					// self.removeLiById(itemIndex);
+              $(e.target).closest('.' + self.listLiClass).remove();
+              self._updateTempItems();
     				});
 
     			}
