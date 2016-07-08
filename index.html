@@ -76,7 +76,6 @@
 
   	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   	<script src="js/vendors/jquery/jquery-ui.js"></script>
-  	<script src="js/vendors/underscore.js"></script>
   	<script src="js/lib/sortable-list.js"></script>
     <script>
 
@@ -374,7 +373,7 @@
     					var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
     					// self.removeLiById(itemIndex);
               $(e.target).closest('.' + self.listLiClass).remove();
-              self._updateTempItems();
+              self.updateTempItems();
     				});
 
     			}
@@ -389,7 +388,8 @@
     	var list;
     	$(document).ready(function() {
     		console.log('document is ready');
-    		list = SortableList.create(options);
+    		// list = SortableList.create(options);
+    		list = SortableList(options);
     	});
 
     </script>
