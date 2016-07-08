@@ -10,9 +10,10 @@
 
   function SortableList(options) {
 
-    var sortableList = new SortableList.create(options);
-		sortableList._init();
-		return sortableList;
+		return new SortableList.create(options)
+    // var sortableList = new SortableList.create(options);
+		// sortableList.init();
+		// return sortableList;
 
 	}
 
@@ -29,7 +30,20 @@
 
 		// After document is ready, init() is invoked
 		// to create jQuery objects and add event listeners
-		_init: function() {
+		init: function(options) {
+
+			// this.items stores the reference of array of objects such as favorites
+			this.items = options.items || [];
+			// this.tempItems is a temporary storage for this.items
+			// this.tempItes is also a shallow copy of this.itmes
+			this.tempItems = this.items.slice(0);
+			// default animation duration determining how long the animation will return
+			// for show, hide, fadeIn, fadeOut, etc
+			this.defaultDuration = options.defaultDuration;
+			// event listeners
+			this.events = options.events || {};
+			// customized methods
+			this.methods = options.methods || {};
 
 			// Create jQuery objects by using HTML ids and classes obtained from options
 			this.$listSection = $('#' + this.listSectionId);
@@ -42,21 +56,26 @@
 			this.$detailEditArticle = $('#' + this.detailEditArticleId);
 
 			this.showList();
-			// updateTempItems() updates this.tempItems
-			// according to this.$listUl
-			this.updateTempItems();
-			this._addEventListeners();
+			this.invokeEventListeners();
+
+		},
+
+		// Invoke event listeners in this.events
+		invokeEventListeners(events) {
+
+			// If no events is provided, invoke this.events
+			events = events || this.events;
+			for (var eventName in events) {
+				console.log('Event listener, "' + eventName + '" is invoked.');
+				this.events[eventName].call(this);
+			}
 
 		},
 
 		// Add eventListeners
-		_addEventListeners: function() {
+		addEventListeners: function(newEvents) {
 
-			var events = this.events;
-			for (var eventName in events) {
-				console.log(eventName + 'is added');
-				this.events[eventName].call(this);
-			}
+			$.extend(this.events, newEvents);
 
 		},
 
@@ -132,23 +151,28 @@
 		// Update this.items same as this.tempItems
 		updateItems: function(callback) {
 
-			var items = this.items;
-			var tempItems = this.tempItems;
-			var tempItemsLength = tempItems.length;
+			// var items = this.items;
+			// var tempItems = this.tempItems;
+			// var tempItemsLength = tempItems.length;
+			//
+			// // Copy the array elements from tempItems to items
+			// for (var i = 0; i < tempItemsLength; i++) {
+			// 	items[i] = tempItems[i];
+			// }
+			// // Removed the elements of items which have been removed from tempItems
+			// items.splice(tempItemsLength);
+			//
+			// if (callback) {
+			// 	var itemsLength = items.length;
+			// 	for (var i = 0; i < itemsLength; i++) {
+			// 		callback.call(this, items[i], i, items);
+			// 	}
+			// }
 
-			// Copy the array elements from tempItems to items
-			for (var i = 0; i < tempItemsLength; i++) {
-				items[i] = tempItems[i];
-			}
-			// Removed the elements of items which have been removed from tempItems
-			items.splice(tempItemsLength);
 
-			if (callback) {
-				var itemsLength = items.length;
-				for (var i = 0; i < itemsLength; i++) {
-					callback.call(this, items[i], i, items);
-				}
-			}
+			// Make this.items a shallow copy of this.tempItems
+			this.items = this.tempItems.slice(0);
+
 
 		},
 
@@ -187,12 +211,15 @@
 			//
 			// TODO: Save the updated this.items to database
 			//
+			if (callback) {
+				callback.call(this, this.items);
+			}
 
 		},
 
 		// Update one element of this.items accroding to the changes from the form inputs
 		// and save this.items into database
-		saveDetailEdit: function(itemIndex) {
+		saveDetailEdit: function(itemIndex, callback) {
 
 			var item = this.items[itemIndex];
 
@@ -223,6 +250,10 @@
 			//
 			// TODO: Save the updated item to database
 			//
+			if (callback) {
+				callback.call(this, this.items);
+			}
+
 		},
 
 		// Make this.$ul sortable
@@ -412,11 +443,6 @@
 
 	SortableList.create = function(options) {
 
-		// this.items stores the reference of array of objects such as favorites
-		this.items = options.items || [];
-		// this.tempItems is a temporary storage for this.items
-		this.tempItems = [];
-
 		// list section
 		this.listSectionId = options.listSectionId;
 		this.listHeaderId = options.listHeaderId;
@@ -437,16 +463,6 @@
 
 		// data attribute of each li
 		this.listDataId = options.listDataId;
-
-		// default animation duration determining how long the animation will return
-		// for show, hide, fadeIn, fadeOut, etc
-		this.defaultDuration = options.defaultDuration;
-
-		// event listeners
-		this.events = options.events;
-
-		// customized methods
-		this.methods = options.methods;
 
 	};
 
