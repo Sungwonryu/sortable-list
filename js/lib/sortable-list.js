@@ -8,12 +8,9 @@
 
 (function(window, $) {
 
-  function SortableList(options) {
+	function SortableList(options) {
 
 		return new SortableList.create(options)
-    // var sortableList = new SortableList.create(options);
-		// sortableList.init();
-		// return sortableList;
 
 	}
 
@@ -28,18 +25,18 @@
 
 	SortableList.prototype = {
 
-		// After document is ready, init() is invoked
+		// After document is ready, init() has to be invoked
 		// to create jQuery objects and add event listeners
 		init: function(options) {
 
 			// this.items stores the reference of array of objects such as favorites
 			this.items = options.items || [];
-			// this.tempItems is a temporary storage for this.items
-			// this.tempItes is also a shallow copy of this.itmes
+			// this.tempItems is a temporary storage for updating this.items
+			// this.tempItems is assigned a shallow copy of this.itmes here
 			this.tempItems = this.items.slice(0);
-			// default animation duration determining how long the animation will return
-			// for show, hide, fadeIn, fadeOut, etc
-			this.defaultDuration = options.defaultDuration;
+			// this.defaultAnimationDuration determines how long the animation will take
+			// for instance, show, hide, fadeIn, fadeOut, etc
+			this.defaultAnimationDuration = options.defaultAnimationDuration;
 			// event listeners
 			this.events = options.events || {};
 			// customized methods
@@ -55,20 +52,8 @@
 			this.$detailArticle = $('#' + this.detailArticleId);
 			this.$detailEditArticle = $('#' + this.detailEditArticleId);
 
-			this.showList();
+			// this.showList();
 			this.invokeEventListeners();
-
-		},
-
-		// Invoke event listeners in this.events
-		invokeEventListeners(events) {
-
-			// If no events is provided, invoke this.events
-			events = events || this.events;
-			for (var eventName in events) {
-				console.log('Event listener, "' + eventName + '" is invoked.');
-				this.events[eventName].call(this);
-			}
 
 		},
 
@@ -76,6 +61,19 @@
 		addEventListeners: function(newEvents) {
 
 			$.extend(this.events, newEvents);
+
+		},
+
+		// Invoke the event listeners in this.events
+		invokeEventListeners(events) {
+
+			// If no events parameter is provided,
+			// invoke this.events which have been added previoulsy.
+			events = events || this.events;
+			for (var eventName in events) {
+				console.log('Event listener, "' + eventName + '" is invoked.');
+				this.events[eventName].call(this);
+			}
 
 		},
 
@@ -97,12 +95,7 @@
 
 			// Create an array of li HTML strings iterating through this.items
 			var arrayLiHtmls = this.items.map(function(item, index, items) {
-				var opts = {
-					item: item,
-					itemIndex: index,
-					items: items
-				};
-				return self.getListLiHtml(opts);
+				return self.getListLiHtml(index);
 			});
 
 			// Create HTML lis and append them into this.$listUl
@@ -111,39 +104,27 @@
 		},
 
 		// Create HTML elements and append them to this.$detailArticle
-		resetDetailArticle: function(itemIndex) {
+		resetDetailArticle: function() {
 
 			var self = this;
 
 			// Remove all existing child nodes of this.$detailArticle
 			this.$detailArticle.empty();
 
-			// Create detail article's HTML content
-			// and append it into this.$detailArticle
-			var opts = {
-				item: this.items[itemIndex],
-				itemIndex: itemIndex
-			};
-			var strDetailHtml = this.getDetailArticleHtml(opts);
+			var strDetailHtml = this.getDetailArticleHtml();
 			this.$detailArticle.append($(strDetailHtml));
 
 		},
 
-		// Recreate HTML elements for this.$detailEditArticle
-		resetDetailEditArticle: function(itemIndex) {
+		// Create HTML elements for this.$detailEditArticle
+		resetDetailEditArticle: function() {
 
 			var self = this;
 
 			// Remove all existing child nodes of this.$detailEditArticle
 			this.$detailEditArticle.empty();
 
-			// Create detail edit article's HTML content
-			// and append it into this.$detailEditArticle
-			var opts = {
-				item: this.items[itemIndex],
-				itemIndex: itemIndex
-			};
-			var strDetailEditHtml = this.getDetailEditArticleHtml(opts);
+			var strDetailEditHtml = this.getDetailEditArticleHtml();
 			this.$detailEditArticle.append($(strDetailEditHtml));
 
 		},
@@ -169,10 +150,12 @@
 			// 	}
 			// }
 
-
 			// Make this.items a shallow copy of this.tempItems
 			this.items = this.tempItems.slice(0);
 
+			if (callback) {
+				callback.call(this, this.items);
+			}
 
 		},
 
@@ -195,10 +178,7 @@
 			tempItems.splice(lisLength);
 
 			if (callback) {
-				var tempItemsLength = tempItems.length;
-				for (var i = 0; i < tempItemsLength; i++) {
-					callback.call(this, tempItems[i], i, tempItems);
-				}
+				callback.call(this, tempItems);
 			}
 
 		},
@@ -208,9 +188,7 @@
 
 			this.updateItems();
 
-			//
-			// TODO: Save the updated this.items to database
-			//
+			// callback function will save this.items to database
 			if (callback) {
 				callback.call(this, this.items);
 			}
@@ -219,9 +197,10 @@
 
 		// Update one element of this.items accroding to the changes from the form inputs
 		// and save this.items into database
-		saveDetailEdit: function(itemIndex, callback) {
+		saveDetailEdit: function(callback) {
 
-			var item = this.items[itemIndex];
+			// var item = this.items[itemIndex];
+			var item = this.items[this.selectedItemIndex];
 
 			// Turn an array-like jQuery object into an array
 			var arrayInputs = $.makeArray(this.$detailEditArticle.find('input'));
@@ -247,9 +226,7 @@
 				item[prop] = $textarea.val();
 			}
 
-			//
-			// TODO: Save the updated item to database
-			//
+			// callback function will save this.items to database
 			if (callback) {
 				callback.call(this, this.items);
 			}
@@ -268,7 +245,7 @@
 					// Update this.tempItems according to the changes on this.$listUl
 					self.updateTempItems();
 					if (callback) {
-						callback.call(self)
+						callback.call(self);
 					}
 				}
 			});
@@ -291,26 +268,26 @@
 
 		},
 
-		_hideList: function(duration) {
+		_hideList: function(animationDuration) {
 
-			duration = duration || this.defaultDuration;
-			this.$listSection.hide(duration);
+			// var animationDuration = animationDuration || this.defaultAnimationDuration;
+			this.$listSection.hide(animationDuration);
 			console.log('_hideList() is called');
 
 		},
 
-		_hideDetail: function(duration) {
+		_hideDetail: function(animationDuration) {
 
-			duration = duration || this.defaultDuration;
-			this.$detailArticle.hide(duration);
+			// var animationDuration = animationDuration || this.defaultAnimationDuration;
+			this.$detailArticle.hide(animationDuration);
 			console.log('_hideDetail() is called');
 
 		},
 
-		_hideDetailEdit: function(duration) {
+		_hideDetailEdit: function(animationDuration) {
 
-			duration = duration || this.defaultDuration;
-			this.$detailEditArticle.hide(duration);
+			// var animationDuration = animationDuration || this.defaultAnimationDuration;
+			this.$detailEditArticle.hide(animationDuration);
 			console.log('_hideDetailEdit() is called');
 
 		},
@@ -319,48 +296,42 @@
 		showList: function(opts) {
 
 			opts = opts || {};
-			var duration = opts.duration || this.defaultDuration;
-			this._hideDetail();
-			this._hideDetailEdit();
+			var animationDuration = opts.animationDuration || this.defaultAnimationDuration;
+			this._hideDetail(animationDuration);
+			this._hideDetailEdit(animationDuration);
 			this.resetListSection();
-			this.$listSection.show(duration);
+			this.$listSection.show(animationDuration);
 
 		},
 
 		// Reset HTML detail contents and display the detail article
 		showDetail: function(opts) {
 
-			var itemIndex = opts.itemIndex;
-			var duration = opts.duration || this.defaultDuration;
+			opts = opts || {};
+			var animationDuration = opts.animationDuration || this.defaultAnimationDuration;
 
-			this._hideList();
-			this._hideDetailEdit();
-
-			// Set data(this.listDataId) on this.$detailSection
-			this.$detailSection.data(this.listDataId, itemIndex)
-			console.log('this.$detailSection.data-' + this.listDataId + '= ' + this.$detailSection.data(this.listDataId));
-
-			this.resetDetailArticle(itemIndex);
+			this._hideList(animationDuration);
+			this._hideDetailEdit(animationDuration);
+			this.resetDetailArticle();
 
 			// Show this.$detailSection and this.$detailArticle
-			this.$detailSection.show(duration);
-			this.$detailArticle.show(duration);
+			this.$detailSection.show(animationDuration);
+			this.$detailArticle.show(animationDuration);
 		},
 
 		// Display the edit form for the previously selected favorite detail
 		showDetailEdit: function(opts) {
 
-			var itemIndex = opts.itemIndex || this.$detailSection.data(this.listDataId);
-			var duration = opts.duration || this.defaultDuration;
+			opts = opts || {};
+			var animationDuration = opts.animationDuration || this.defaultAnimationDuration;
 
-			this._hideList();
-			this._hideDetail();
-
-			this.resetDetailEditArticle(itemIndex);
+			this._hideList(animationDuration);
+			this._hideDetail(animationDuration);
+			this.resetDetailEditArticle();
 
 			// Show this.$detailSection and this.$detailEditArticle
-			this.$detailSection.show(duration);
-			this.$detailEditArticle.show(duration);
+			this.$detailSection.show(animationDuration);
+			this.$detailEditArticle.show(animationDuration);
 		},
 
 		// // Find arrayMatchedLis which return true from callback and then
@@ -466,15 +437,9 @@
 
 	};
 
+	// The 'new' keyword is not needed
+	// because it is used inside SortableList constructor function
 	SortableList.create.prototype = SortableList.prototype;
-
-
-	// factory function for SortableList
-	// SortableList.create = function(options) {
-	// 	var sortableList = new SortableList(options);
-	// 	sortableList.init();
-	// 	return sortableList;
-	// }
 
 	window.SortableList = SortableList;
 

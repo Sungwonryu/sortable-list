@@ -72,7 +72,7 @@
   		</article>
   	</section>
 
-
+    <button class="open-favorite-panel">Open Favorite List</button>
 
   	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   	<script src="js/vendors/jquery/jquery-ui.js"></script>
@@ -146,9 +146,10 @@
 
         // default animation duration determining how long the animation will return
         // for show, hide, fadeIn, fadeOut, etc
-    		defaultDuration: 'fast',
+    		defaultAnimationDuration: 'fast',
 
     		getListHeaderHtml: function(opts) {
+
     			// HTML string for the header part of sortable list section
     			var strHtml =
     				'<h1 class="title">' + 'Favorites' +
@@ -166,19 +167,18 @@
        			return strHtml;
     		},
 
-    		getListLiHtml: function(opts) {
-    			var favorite = opts.item;
-    			var index = opts.itemIndex;
-    			// var favorites = opts.items;
+    		getListLiHtml: function(itemIndex) {
+
+    			var item = this.items[itemIndex];
 
     			// HTML string for each favorite li
     			var strHtml =
-    				'<li class="' + this.listLiClass + '" id="favorite_' + index + '"' +
-    					' data-' + this.listDataId + '="' + index + '"' +
+    				'<li class="' + this.listLiClass + '" id="favorite_' + itemIndex + '"' +
+    					' data-' + this.listDataId + '="' + itemIndex + '"' +
     					'>' +
     					'<h3 class="flip">' +
     						'<a href="#" class="button list-delete-button">Delete</a>' +
-    						(favorite.favoriteName || favorite.name) +
+    						'<span class="favorite-name">' + (item.favoriteName || item.name) + '</span>' +
     						'<a href="#" class="button list-detail-button">Detail</a>' +
     						'<a href="#" class="button list-move-button">Move</a>' +
      					'</h3>' +
@@ -187,11 +187,10 @@
     			return strHtml;
     		},
 
-    		getDetailArticleHtml: function(opts) {
-    			var item = opts.item;
+    		getDetailArticleHtml: function() {
 
-    			console.log('#### item in getDetailArticleHtml');
-    			console.log(item);
+    			var item = this.items[this.selectedItemIndex];
+
     			// HTML string for one favrite detail
     			var strHtml =
     				'<h1>' +
@@ -208,8 +207,9 @@
     			return strHtml;
     		},
 
-    		getDetailEditArticleHtml: function(opts) {
-    			var item = opts.item;
+    		getDetailEditArticleHtml: function() {
+
+          var item = this.items[this.selectedItemIndex];
 
     			// HTML string for one favrite detail edit
     			var strHtml =
@@ -230,29 +230,27 @@
     		// eventListeners:
     		events: {
     			// Make list edit enable by clicking .edit-button in #favorite-list-header
-    			enableListEdit: function() {
+    			enableListEdit: function(opts) {
 
     				// this is the object of SortableList itself
     				var self = this;
-    				var duration = 'fast';
+
+            opts = opts || {};
+    				var animationDuration = opts.animationDuration || this.defaultAnimationDuration;
 
     				this.$listSection.on('click', '.edit-button', function(e) {
-
-    					// console.log(e.target);
-    					// $(e.target).hide();
-
     					// Hide .edit-button
-    					self.$listHeader.find('.edit-button').fadeOut(duration, function() {
+    					self.$listHeader.find('.edit-button').fadeOut(animationDuration, function() {
     						// Show .save-button and .cancel-button in this.$listHeader
-    						self.$listHeader.find('.save-button').fadeIn(duration);
-    						self.$listHeader.find('.cancel-button').fadeIn(duration);
+    						self.$listHeader.find('.save-button').fadeIn(animationDuration);
+    						self.$listHeader.find('.cancel-button').fadeIn(animationDuration);
     					});
 
     					// Hide .list-detail-button on each li
-    					self.$listUl.find('.list-detail-button').fadeOut(duration, function() {
+    					self.$listUl.find('.list-detail-button').fadeOut(animationDuration, function() {
     						// Show .list-delete-button and list-move-button in each li
-	    					self.$listUl.find('.list-delete-button').fadeIn(duration);
-	    					self.$listUl.find('.list-move-button').fadeIn(duration);
+	    					self.$listUl.find('.list-delete-button').fadeIn(animationDuration);
+	    					self.$listUl.find('.list-move-button').fadeIn(animationDuration);
     					});
 
     					self._enableListSortable();
@@ -262,98 +260,55 @@
 
     			cancelListEdit: function() {
 
-    				// this is the object of SortableList itself
+            // this is the object of SortableList itself
     				var self = this;
-    				var speed = 'fast';
 
     				this.$listSection.on('click', '.cancel-button', function(e) {
     					self._disableListSortable();
-              self.resetListSection();
-    				});
-
-    			},
-
-    			saveListEdit: function() {
-
-    				// this is the object of SortableList itself
-    				var self = this;
-
-    				this.$listSection.on('click', '.save-button', function(e) {
-              self.saveListEdit();
-              self._disableListSortable();
-              self.resetListSection();
+              self.showList();
     				});
 
     			},
 
     			// When detail button on each favorite list is clicked,
     			// favorite list get hidden and the favorite detail get displayed
-    			showDetail: function() {
+    			clickListDetailButton: function() {
 
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$listSection.on('click', '.list-detail-button', function(e) {
-    					var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
-              var opts = {
-                itemIndex: itemIndex
-              };
-    					self.showDetail(opts);
+    					self.selectedItemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
+    					self.showDetail();
     				});
 
     			},
 
-    			showDetailEdit: function() {
+    			clickDetailEditButton: function() {
 
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$detailArticle.on('click', '.detail-edit-button', function(e) {
     					// var itemIndex = $(e.target).closest('#' + self.detailSectionId).data(self.listDataId);
-    					var itemIndex = self.$detailSection.data(self.listDataId);
-              var opts = {
-                itemIndex: itemIndex
-              };
-    					self.showDetailEdit(opts);
+    					// var itemIndex = self.$detailSection.data(self.listDataId);
+    					self.showDetailEdit();
     				});
 
     			},
 
-    			cancelDetailEdit: function() {
+    			clickDetailCancelButton: function() {
 
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$detailEditArticle.on('click', '.detail-cancel-button', function(e) {
-    					var itemIndex = self.$detailSection.data(self.listDataId);
-              var opts = {
-                itemIndex: itemIndex
-              };
-    					self.showDetail(opts);
+    					self.showDetail();
     				});
 
     			},
 
-    			saveDetailEdit: function() {
-
-    				// this is the object of SortableList itself
-    				var self = this;
-
-    				this.$detailEditArticle.on('click', '.detail-save-button', function(e) {
-    					var itemIndex = self.$detailSection.data(self.listDataId);
-    					self.saveDetailEdit(itemIndex);
-
-    					// TODO: Save the updated favorites in database
-
-              var opts = {
-                itemIndex: itemIndex
-              };
-    					self.showDetail(opts);
-    				});
-
-    			},
-
-    			returnToFavoriteList: function() {
+    			clickReturnToFavoritesButton: function() {
 
     				// this is the object of SortableList itself
     				var self = this;
@@ -364,13 +319,13 @@
 
     			},
 
-    			deleteFavorite: function() {
+    			clickListDeleteButton: function() {
 
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$listSection.on('click', '.list-delete-button', function(e) {
-    					var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
+    					// var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
     					// self.removeLiById(itemIndex);
               $(e.target).closest('.' + self.listLiClass).remove();
               self.updateTempItems();
@@ -385,12 +340,95 @@
     		}
     	};
 
+      var events = {
+
+        saveListEdit: function() {
+
+          // this is the object of SortableList itself
+          var self = this;
+
+          this.$listSection.on('click', '.save-button', function(e) {
+            self.saveListEdit(function() {
+
+              //
+              // TODO: Save the updated favorites in database
+              //
+
+            });
+            self._disableListSortable();
+            self.resetListSection();
+          });
+
+        },
+
+        saveDetailEdit: function() {
+
+          // this is the object of SortableList itself
+          var self = this;
+
+          this.$detailEditArticle.on('click', '.detail-save-button', function(e) {
+            // var itemIndex = self.$detailSection.data(self.listDataId);
+            self.saveDetailEdit(function() {
+
+              //
+              // TODO: Save the updated favorites in database
+              //
+
+            });
+
+            self.showDetail();
+          });
+
+        },
+
+        togglePin: function() {
+
+          var self = this;
+
+          this.$listSection.on('click', '.favorite-name', function(e) {
+            var $clickedElement = $(e.target);
+            var $favoriteLi = $clickedElement.closest('.' + self.listLiClass);
+
+            if ($favoriteLi.hasClass('active')) {
+              // If the pin has been dropped in the map
+
+              $favoriteLi.removeClass('active');
+              $clickedElement.text($clickedElement.text().slice(0, -11));
+
+              //
+              // TODO: remove the pin from the map
+              //
+
+            } else {
+              // If the pin has been removed from the map
+
+              $favoriteLi.addClass('active');
+              $clickedElement.text($clickedElement.text() + ' pin droped');
+
+              //
+              // TODO: drop the pin to the map
+              //
+            }
+
+          });
+
+        }
+
+      };
+
     	var list;
     	$(document).ready(function() {
     		console.log('document is ready');
     		// list = SortableList.create(options);
     		list = SortableList(options);
         list.init(options);
+
+        list.addEventListeners(events);
+        list.invokeEventListeners(events);
+
+        $('body').on('click', '.open-favorite-panel', function() {
+          list.showList();
+        });
 
     	});
 
