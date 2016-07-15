@@ -25,17 +25,17 @@
       #favorite-list-header h1 {
         text-align: center;
       }
-      #favorite-list-header a {
+      #favorite-list-header .button {
       	float: right;
       }
-      #favorite-list-header .cancel-button,
-      #favorite-list-header .save-button {
+      #favorite-list-header .list-cancel-button,
+      #favorite-list-header .list-save-button {
       	display: none;
       }
+
       #favorite-list-ul {
       	list-style: none;
       }
-
 
       #favorite-list-ul .button {
       	border: solid 1px grey;
@@ -52,6 +52,9 @@
       	display: none;
       }
 
+      .close-favorite-panel {
+        display: none;
+      }
   	</style>
   </head>
   <body>
@@ -73,6 +76,7 @@
   	</section>
 
     <button class="open-favorite-panel">Open Favorite List</button>
+    <button class="close-favorite-panel">Close Favorite List</button>
 
   	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.2/jquery.min.js"></script>
   	<script src="js/vendors/jquery/jquery-ui.js"></script>
@@ -128,7 +132,7 @@
     	];
 
     	var options = {
-    		items: favorites,
+    		// items: favorites,
 
     		// favorite list section
     		listSectionId: 'favorite-list-section',
@@ -149,18 +153,17 @@
     		defaultAnimationDuration: 'fast',
 
     		getListHeaderHtml: function(opts) {
-
     			// HTML string for the header part of sortable list section
     			var strHtml =
     				'<h1 class="title">' + 'Favorites' +
 						'<span class="save-span">' +
-		    				'<a class="button save-button">Save</a>' +
+		    				'<a class="button list-save-button">Save</a>' +
 		    			'</span>' +
     					'<span class="cancel-span">' +
-		    				'<a class="button cancel-button">Cancel</a>' +
+		    				'<a class="button list-cancel-button">Cancel</a>' +
 		    			'</span>' +
     					'<span class="edit-button-span">' +
-		    				'<a class="button edit-button">Edit</a>' +
+		    				'<a class="button list-edit-button">Edit</a>' +
 		    			'</span>' +
     				'</h1>';
 
@@ -168,10 +171,9 @@
     		},
 
     		getListLiHtml: function(itemIndex) {
-
     			var item = this.items[itemIndex];
 
-    			// HTML string for each favorite li
+          // HTML string for each favorite li
     			var strHtml =
     				'<li class="' + this.listLiClass + '" id="favorite_' + itemIndex + '"' +
     					' data-' + this.listDataId + '="' + itemIndex + '"' +
@@ -188,7 +190,6 @@
     		},
 
     		getDetailArticleHtml: function() {
-
     			var item = this.items[this.selectedItemIndex];
 
     			// HTML string for one favrite detail
@@ -208,7 +209,6 @@
     		},
 
     		getDetailEditArticleHtml: function() {
-
           var item = this.items[this.selectedItemIndex];
 
     			// HTML string for one favrite detail edit
@@ -227,23 +227,54 @@
     			return strHtml;
     		},
 
+        downloadItems: function(callback) {
+          var self = this;
+
+          setTimeout(function(){
+            // self.setBothItems(favorites);
+            console.log('downloadItems() and setBothItems() are invoked');
+            var status = true;
+            if (callback) {
+              callback.call(self, favorites, status);
+            }
+          }, 2000);
+
+        },
+
+        uploadItems: function(newItems, callback) {
+          var self = this;
+          // var tempItems = this.tempItems;
+
+          setTimeout(function() {
+            favorites = newItems;
+            console.log('uploadItems() is done and items are uploaded to DB');
+            var status = true;
+            if (callback) {
+              callback.call(self, status);
+            }
+          }, 2000);
+        },
+
+        // Reusable methods
+        methods: {
+        },
+
     		// eventListeners:
     		events: {
     			// Make list edit enable by clicking .edit-button in #favorite-list-header
-    			enableListEdit: function(opts) {
-
+    			clickListEditbutton: function(opts) {
     				// this is the object of SortableList itself
     				var self = this;
 
             opts = opts || {};
     				var animationDuration = opts.animationDuration || this.defaultAnimationDuration;
 
-    				this.$listSection.on('click', '.edit-button', function(e) {
+    				this.$listSection.on('click', '.list-edit-button', function(e) {
     					// Hide .edit-button
-    					self.$listHeader.find('.edit-button').fadeOut(animationDuration, function() {
+    					self.$listHeader.find('.list-edit-button').fadeOut(animationDuration, function() {
     						// Show .save-button and .cancel-button in this.$listHeader
-    						self.$listHeader.find('.save-button').fadeIn(animationDuration);
-    						self.$listHeader.find('.cancel-button').fadeIn(animationDuration);
+    						self.$listHeader.find('.list-save-button').fadeIn(animationDuration);
+    						self.$listHeader.find('.list-cancel-button').fadeIn(animationDuration);
     					});
 
     					// Hide .list-detail-button on each li
@@ -255,25 +286,23 @@
 
     					self._enableListSortable();
     				});
-
     			},
 
-    			cancelListEdit: function() {
-
+    			clickListCancelButton: function() {
             // this is the object of SortableList itself
     				var self = this;
 
-    				this.$listSection.on('click', '.cancel-button', function(e) {
+    				this.$listSection.on('click', '.list-cancel-button', function(e) {
     					self._disableListSortable();
+              // Make this.tempItems same as this.items
+              self.setBothItems(self.items);
               self.showList();
     				});
-
     			},
 
     			// When detail button on each favorite list is clicked,
     			// favorite list get hidden and the favorite detail get displayed
     			clickListDetailButton: function() {
-
     				// this is the object of SortableList itself
     				var self = this;
 
@@ -281,11 +310,9 @@
     					self.selectedItemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
     					self.showDetail();
     				});
-
     			},
 
     			clickDetailEditButton: function() {
-
     				// this is the object of SortableList itself
     				var self = this;
 
@@ -294,33 +321,30 @@
     					// var itemIndex = self.$detailSection.data(self.listDataId);
     					self.showDetailEdit();
     				});
-
     			},
 
     			clickDetailCancelButton: function() {
-
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$detailEditArticle.on('click', '.detail-cancel-button', function(e) {
+              self.setBothItems(self.items);
     					self.showDetail();
     				});
 
     			},
 
     			clickReturnToFavoritesButton: function() {
-
     				// this is the object of SortableList itself
     				var self = this;
 
     				this.$detailSection.on('click', '.favorite-list-button', function(e) {
+              self.resetListSection();
     					self.showList();
     				});
-
     			},
 
     			clickListDeleteButton: function() {
-
     				// this is the object of SortableList itself
     				var self = this;
 
@@ -328,106 +352,130 @@
     					// var itemIndex = $(e.target).closest('.' + self.listLiClass).data(self.listDataId);
     					// self.removeLiById(itemIndex);
               $(e.target).closest('.' + self.listLiClass).remove();
-              self.updateTempItems();
+              self.saveListToTempItems();
     				});
+    			},
 
-    			}
+          // Click 'save' on $listEdit
+          saveListEdit: function() {
+            // this is the object of SortableList itself
+            var self = this;
 
-    		},
+            this.$listSection.on('click', '.list-save-button', function(e) {
+              var tempItems = self.tempItems;
 
-    		// Reusable methods
-    		methods: {
+              //
+              // TODO: Save the updated favorites in database
+              //
+
+              self.uploadItems(tempItems, function(status) {
+                if (status) {
+                  self.setBothItems(tempItems);
+                  console.log('saved tempItems to DB successfully');
+
+                } else {
+                  self.setBothItems(self.items);
+                  console.log('failed to save tempItems to DB');
+                }
+                self._disableListSortable();
+                self.resetListSection();
+                self.showList();
+              });
+            });
+          },
+
+          saveDetailEdit: function() {
+            // this is the object of SortableList itself
+            var self = this;
+
+            this.$detailEditArticle.on('click', '.detail-save-button', function(e) {
+              self.saveDetailToTempItems();
+              var tempItems = self.tempItems;
+
+              //
+              // TODO: Save the updated favorites in database
+              //
+
+              self.uploadItems(tempItems, function(status) {
+                if (status) {
+                  self.setBothItems(tempItems);
+                  console.log('saved tempItems to DB successfully');
+
+                } else {
+                  self.setBothItems(self.items);
+                  console.log('failed to save tempItems to DB');
+                }
+                self.resetDetailArticle();
+                self.showDetail();
+              });
+            });
+          },
+
+          // Drop and remove the pin marker corresponding to the item clicked on this.$listUl
+          togglePin: function() {
+            // this is the object of SortableList itself
+            var self = this;
+
+            this.$listSection.on('click', '.favorite-name', function(e) {
+              var $clickedElement = $(e.target);
+              var $favoriteLi = $clickedElement.closest('.' + self.listLiClass);
+
+              if ($favoriteLi.hasClass('active')) {
+                // If the pin has been dropped in the map
+                $favoriteLi.removeClass('active');
+                $clickedElement.text($clickedElement.text().slice(0, -11));
+
+                //
+                // TODO: remove the pin from the map
+                //
+
+              } else {
+                // If the pin has been removed from the map
+                $favoriteLi.addClass('active');
+                $clickedElement.text($clickedElement.text() + ' pin droped');
+
+                //
+                // TODO: drop the pin to the map
+                //
+              }
+            });
+          }
     		}
     	};
 
-      var events = {
 
-        saveListEdit: function() {
-
-          // this is the object of SortableList itself
-          var self = this;
-
-          this.$listSection.on('click', '.save-button', function(e) {
-            self.saveListEdit(function() {
-
-              //
-              // TODO: Save the updated favorites in database
-              //
-
-            });
-            self._disableListSortable();
-            self.resetListSection();
-          });
-
-        },
-
-        saveDetailEdit: function() {
-
-          // this is the object of SortableList itself
-          var self = this;
-
-          this.$detailEditArticle.on('click', '.detail-save-button', function(e) {
-            // var itemIndex = self.$detailSection.data(self.listDataId);
-            self.saveDetailEdit(function() {
-
-              //
-              // TODO: Save the updated favorites in database
-              //
-
-            });
-
-            self.showDetail();
-          });
-
-        },
-
-        togglePin: function() {
-
-          var self = this;
-
-          this.$listSection.on('click', '.favorite-name', function(e) {
-            var $clickedElement = $(e.target);
-            var $favoriteLi = $clickedElement.closest('.' + self.listLiClass);
-
-            if ($favoriteLi.hasClass('active')) {
-              // If the pin has been dropped in the map
-
-              $favoriteLi.removeClass('active');
-              $clickedElement.text($clickedElement.text().slice(0, -11));
-
-              //
-              // TODO: remove the pin from the map
-              //
-
-            } else {
-              // If the pin has been removed from the map
-
-              $favoriteLi.addClass('active');
-              $clickedElement.text($clickedElement.text() + ' pin droped');
-
-              //
-              // TODO: drop the pin to the map
-              //
-            }
-
-          });
-
-        }
-
-      };
-
-    	var list;
+    	var favoriteList;
     	$(document).ready(function() {
     		console.log('document is ready');
-    		// list = SortableList.create(options);
-    		list = SortableList(options);
-        list.init(options);
+    		// favoriteList = SortableList.create(options);
+    		favoriteList = SortableList(options);
+        favoriteList.init(options);
 
-        list.addEventListeners(events);
-        list.invokeEventListeners(events);
+        // favoriteList.addEventListeners(events);
+        // favoriteList.invokeEventListeners(events);
 
         $('body').on('click', '.open-favorite-panel', function() {
-          list.showList();
+          favoriteList.downloadItems(function(newItems, status) {
+            if (status) {
+              this.setBothItems(newItems);
+              console.log('Download newItems successfully');
+              this.resetListSection();
+              this.showList();
+              $('.open-favorite-panel').hide();
+              $('.close-favorite-panel').show();
+            } else {
+              // this.setBothItems(this.items);
+              console.log('Fail to download newItems');
+            }
+          })
+        });
+
+        $('body').on('click', '.close-favorite-panel', function() {
+          favoriteList.hideList();
+          favoriteList.hideDetail();
+          favoriteList.hideDetailEdit();
+          $('.close-favorite-panel').hide();
+          $('.open-favorite-panel').show();
         });
 
     	});
